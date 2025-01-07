@@ -13,6 +13,7 @@ SCRIPT_DIR=$(dirname "$0")
 ENV_FILE="$SCRIPT_DIR/.env"
 mkdir -p "$SCRIPT_DIR/../backup/"
 PROMPT_NOTE=$(cat <<EOF
+修正箇所の前後に3行のコンテキストを含めてください。
 以下が修正対象のファイル内容です：
 EOF
 )
@@ -89,22 +90,44 @@ if [[ -z $OPENAI_CHATGPT_API_KEY ]]; then
 fi
 
 # ChatGPT APIをcurlで呼び出す
+# echo debug
+# CHATGPT_RESPONSE=$(cat "$SCRIPT_DIR/../backup/response.json")
 CHATGPT_RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
   -H "Authorization: Bearer $OPENAI_CHATGPT_API_KEY" \
   -H "Content-Type: application/json" \
   -d "$(jq -n --arg content "${PROMPT_STR}\n${PROMPT_NOTE}\n${FILE_CONTENT_STR}" \
     '{model: "gpt-4o", messages: [{role: "system", content: "You are a helpful assistant."}, {role: "user", content: $content}]}')")
+# response.jsonに書き込む
+echo "$CHATGPT_RESPONSE" | jq . > "$SCRIPT_DIR/../backup/response.json"
 
 # レスポンスからメッセージ内容を取得してresultに書き込む
 echo "$CHATGPT_RESPONSE" | jq -r '.choices[0].message.content' > "$SCRIPT_DIR/../backup/result"
 
 # コードブロックを抽出してcodeに書き込む
-CODE_BLOCK=$(echo "$CHATGPT_RESPONSE" | jq -r '.choices[0].message.content' | awk '/^```/,/^```$/' | sed '/^```/d')
+# CODE_BLOCK=$(echo "$CHATGPT_RESPONSE" | jq -r '.choices[0].message.content' | awk '/^```/,/^```$/' | sed '/^```/d')
+CODE_BLOCK=""
+in_code_block=false
+while IFS= read -r line; do
+  if [[ "$line" == '```'* ]]; then
+    # コードブロックの開始・終了を切り替える
+    if $in_code_block; then
+      in_code_block=false
+    else
+      in_code_block=true
+    fi
+  elif $in_code_block; then
+    # コードブロック内の行を抽出
+    echo "$line"
+    CODE_BLOCK="${CODE_BLOCK}\n${line}"
+  fi
+done < "$SCRIPT_DIR/../backup/result"
+
 
 if [[ -n $CODE_BLOCK ]]; then
-  echo "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
+  echo -e "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
+  vimdiff "$FILE_PATH" "$SCRIPT_DIR/../backup/code"
   # echo "$CODE_BLOCK" > "$FILE_PATH"
-  patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
+  # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
 else
   echo "エラー: レスポンスにコードブロックが見つかりませんでした。"
   exit 1
