@@ -69,15 +69,24 @@ fi
 FILE_CONTENT_STR=$(cat $FILE_PATH)
 
 # プロンプトの入力を受け付ける
-echo "プロンプトを入力してください (Ctrl+Dで終了):"
-PROMPT_STR=$(cat)
+# catでヒアドキュメントで、プロンプトを受け取る
+# echo "プロンプトを入力してください (Ctrl+Dで終了):"
+# PROMPT_STR=$(cat)
+
+# 一時ファイルを作成してgeditで開き、プロンプトを受け取る
+TMP_FILE=$(mktemp /tmp/__xasc_XXXXXX)
+trap "rm -f $TMP_FILE" EXIT   # スクリプト終了時に一時ファイルを削除
+echo "プロンプトを入力してください。"
+gedit "$TMP_FILE" &> /dev/null
+
+# プロンプトの内容を読み込む
+PROMPT_STR=$(cat "$TMP_FILE")
 
 # プロンプトが空の場合はエラーを表示して終了
 if [[ -z $PROMPT_STR ]]; then
   echo "エラー: プロンプトが入力されていません。"
   exit 1
 fi
-
 echo "<問い合わせています。お待ちください。>"
 
 # プロンプトをpromptに保存
