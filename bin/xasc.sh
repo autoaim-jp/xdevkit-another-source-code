@@ -81,6 +81,7 @@ gedit "$TMP_FILE" &> /dev/null
 
 # プロンプトの内容を読み込む
 PROMPT_STR=$(cat "$TMP_FILE")
+echo -e "$PROMPT_STR"
 
 # プロンプトが空の場合はエラーを表示して終了
 if [[ -z $PROMPT_STR ]]; then
@@ -134,8 +135,10 @@ done < "$SCRIPT_DIR/../backup/result"
 
 if [[ -n $CODE_BLOCK ]]; then
   echo -e "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
-  diff-so-fancy "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
-  meld "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
+
+  echo "diff "$(realpath "$FILE_PATH")" "$(realpath "$SCRIPT_DIR/../backup/code")
+  diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code")
+  meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code")
   vimdiff "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
   # echo "$CODE_BLOCK" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
