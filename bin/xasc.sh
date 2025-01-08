@@ -77,7 +77,8 @@ FILE_CONTENT_STR=$(cat $FILE_PATH)
 TMP_FILE=$(mktemp /tmp/__xasc_XXXXXX)
 trap "rm -f $TMP_FILE" EXIT   # スクリプト終了時に一時ファイルを削除
 echo "プロンプトを入力してください。"
-gedit "$TMP_FILE" &> /dev/null
+# gedit "$TMP_FILE" &> /dev/null
+vi "$TMP_FILE"
 
 # プロンプトの内容を読み込む
 PROMPT_STR=$(cat "$TMP_FILE")
@@ -137,8 +138,8 @@ if [[ -n $CODE_BLOCK ]]; then
   echo -e "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
 
   echo "diff "$(realpath "$FILE_PATH")" "$(realpath "$SCRIPT_DIR/../backup/code")
-  diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code")
-  meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code")
+  diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
+  meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   vimdiff "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
   # echo "$CODE_BLOCK" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
