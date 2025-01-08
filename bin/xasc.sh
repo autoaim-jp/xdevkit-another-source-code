@@ -125,7 +125,9 @@ done < "$SCRIPT_DIR/../backup/result"
 
 if [[ -n $CODE_BLOCK ]]; then
   echo -e "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
-  vimdiff "$FILE_PATH" "$SCRIPT_DIR/../backup/code"
+  diff-so-fancy "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
+  meld "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
+  vimdiff "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
   # echo "$CODE_BLOCK" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
 else
