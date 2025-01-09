@@ -48,6 +48,12 @@ fi
 # .envファイルを読み込む
 source "$ENV_FILE"
 
+# 指定されたファイルが存在しない場合は作成
+if [[ ! -f $FILE_PATH ]]; then
+  touch $FILE_PATH
+  echo "[info] ファイル $FILE_PATH が存在しません。作成しました。"
+fi
+
 # 指定されたファイルが変更されているか、未追跡ファイルであるかを確認
 if [[ -n $(git ls-files --modified --others --exclude-standard "$FILE_PATH") ]]; then
   echo -n "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n/diff/vi): "
@@ -65,12 +71,6 @@ if [[ -n $(git ls-files --modified --others --exclude-standard "$FILE_PATH") ]];
     echo "終了します。"
     exit 0
   fi
-fi
-
-# 指定されたファイルが存在しない場合はエラーを表示して終了
-if [[ ! -f $FILE_PATH ]]; then
-  echo "エラー: ファイル $FILE_PATH が存在しません。"
-  exit 1
 fi
 
 # ファイルの内容をFILE_CONTENT_STRに読み込む
@@ -146,12 +146,18 @@ done < "$SCRIPT_DIR/../backup/result"
 if [[ -n $CODE_BLOCK ]]; then
   echo -e "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
 
+  # 差分確認して手動でマージ
   echo "diff "$(realpath "$FILE_PATH")" "$(realpath "$SCRIPT_DIR/../backup/code")
   diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   # meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   vimdiff "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
   # echo "$CODE_BLOCK" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
+
+  # 上書きしたあとに手動でマージ うまくいかない
+  # echo -e "$CODE_BLOCK" > "$FILE_PATH"
+  # git restore -s @ -p "$FILE_PATH"
+
 else
   echo "エラー: レスポンスにコードブロックが見つかりませんでした。"
   echo "レスポンス全体を表示します。"
