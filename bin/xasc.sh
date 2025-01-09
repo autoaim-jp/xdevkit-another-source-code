@@ -13,7 +13,7 @@ SCRIPT_DIR=$(dirname "$0")
 ENV_FILE="$SCRIPT_DIR/.env"
 mkdir -p "$SCRIPT_DIR/../backup/"
 PROMPT_NOTE=$(cat <<EOF
-修正箇所の前後に3行のコンテキストを含めてください。
+必ず、修正箇所の前後数行も一緒に表示してください。
 以下が修正対象のファイル内容です：
 EOF
 )
@@ -50,8 +50,17 @@ source "$ENV_FILE"
 
 # 指定されたファイルが変更されているか、未追跡ファイルであるかを確認
 if [[ -n $(git ls-files --modified --others --exclude-standard "$FILE_PATH") ]]; then
-  echo "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n)"
+  echo -n "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n/diff/vi): "
   read -r answer
+  if [[ $answer == "vi" ]]; then
+    vi "$FILE_PATH"
+    echo -n "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n): "
+    read -r answer
+  elif [[ $answer == "diff" ]]; then
+    git diff
+    echo -n "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n): "
+    read -r answer
+  fi
   if [[ $answer != "y" ]]; then
     echo "終了します。"
     exit 0
@@ -70,13 +79,13 @@ FILE_CONTENT_STR=$(cat $FILE_PATH)
 
 # プロンプトの入力を受け付ける
 # catでヒアドキュメントで、プロンプトを受け取る
-# echo "プロンプトを入力してください (Ctrl+Dで終了):"
+# echo "[info] プロンプトを入力してください (Ctrl+Dで終了):"
 # PROMPT_STR=$(cat)
 
 # 一時ファイルを作成してgeditで開き、プロンプトを受け取る
 TMP_FILE=$(mktemp /tmp/__xasc_XXXXXX)
 trap "rm -f $TMP_FILE" EXIT   # スクリプト終了時に一時ファイルを削除
-echo "プロンプトを入力してください。"
+echo "[info] プロンプトを入力してください。"
 # gedit "$TMP_FILE" &> /dev/null
 vi "$TMP_FILE"
 
@@ -89,7 +98,7 @@ if [[ -z $PROMPT_STR ]]; then
   echo "エラー: プロンプトが入力されていません。"
   exit 1
 fi
-echo "<問い合わせています。お待ちください。>"
+echo "[info] 問い合わせています。お待ちください。>"
 
 # プロンプトをpromptに保存
 echo -e "${PROMPT_STR}\n${PROMPT_NOTE}\n${FILE_CONTENT_STR}" > "$SCRIPT_DIR/../backup/prompt"
@@ -139,12 +148,14 @@ if [[ -n $CODE_BLOCK ]]; then
 
   echo "diff "$(realpath "$FILE_PATH")" "$(realpath "$SCRIPT_DIR/../backup/code")
   diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
-  meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
+  # meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   vimdiff "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
   # echo "$CODE_BLOCK" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
 else
   echo "エラー: レスポンスにコードブロックが見つかりませんでした。"
+  echo "レスポンス全体を表示します。"
+  echo "$CHATGPT_RESPONSE" | jq -r '.choices[0].message.content'
   exit 1
 fi
 
