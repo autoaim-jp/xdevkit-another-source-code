@@ -1,5 +1,7 @@
 #!/bin/bash
 
+
+
 # スクリプト名: ./xasc.sh
 
 # 引数が指定されていない場合はエラーを表示して終了
@@ -13,10 +15,17 @@ SCRIPT_DIR=$(dirname "$0")
 ENV_FILE="$SCRIPT_DIR/.env"
 mkdir -p "$SCRIPT_DIR/../backup/"
 PROMPT_NOTE=$(cat <<EOF
-必ず、修正箇所の前後数行も一緒に表示してください。
-以下が修正対象のファイル内容です：
+ファイル全体を表示してください。
+修正対象のファイル: $(basename $FILE_PATH)
 EOF
 )
+
+# PROMPT_NOTE=$(cat <<EOF
+# 最低限修正箇所の前後3行、もしくは修正した関数全体を表示してください。
+# 以下が修正対象のファイル内容です：
+# EOF
+# )
+
 # PROMPT_NOTE=$(cat <<EOF
 # 修正箇所はユニファイドフォーマット（\`diff -u\`）で出力してください。フォーマットの要件は以下の通りです：
 # 1. 修正前（\`---\`）と修正後（\`+++\`）にはファイル名[$FILE_PATH]を含めてください。
@@ -87,7 +96,9 @@ TMP_FILE=$(mktemp /tmp/__xasc_XXXXXX)
 trap "rm -f $TMP_FILE" EXIT   # スクリプト終了時に一時ファイルを削除
 echo "[info] プロンプトを入力してください。"
 # gedit "$TMP_FILE" &> /dev/null
-vi "$TMP_FILE"
+# vi "$TMP_FILE"
+vi -c "vsplit $FILE_PATH" "$TMP_FILE"
+
 
 # プロンプトの内容を読み込む
 PROMPT_STR=$(cat "$TMP_FILE")
