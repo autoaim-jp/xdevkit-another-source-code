@@ -63,7 +63,7 @@ if [[ -n $(git ls-files --modified --others --exclude-standard "$FILE_PATH") ]];
     echo -n "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n): "
     read -r answer
   elif [[ $answer == "diff" ]]; then
-    git diff
+    git diff $FILE_PATH
     echo -n "$FILE_PATH は変更されているか、未追跡のファイルです。編集を続けますか？ (y/n): "
     read -r answer
   fi
@@ -98,7 +98,7 @@ if [[ -z $PROMPT_STR ]]; then
   echo "エラー: プロンプトが入力されていません。"
   exit 1
 fi
-echo "[info] 問い合わせています。お待ちください。>"
+echo "[info] 問い合わせています。お待ちください。"
 
 # プロンプトをpromptに保存
 echo -e "${PROMPT_STR}\n${PROMPT_NOTE}\n${FILE_CONTENT_STR}" > "$SCRIPT_DIR/../backup/prompt"
