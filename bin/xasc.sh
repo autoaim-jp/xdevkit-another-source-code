@@ -161,7 +161,7 @@ if [[ -n $CODE_BLOCK ]]; then
   echo "diff "$(realpath "$FILE_PATH")" "$(realpath "$SCRIPT_DIR/../backup/code")
   diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   # meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
-  vimdiff "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
+  vimdiff -c "windo set nofoldenable" "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
   # echo "$CODE_BLOCK" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
 
