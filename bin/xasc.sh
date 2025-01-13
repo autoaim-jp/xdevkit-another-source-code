@@ -97,7 +97,7 @@ trap "rm -f $TMP_FILE" EXIT   # スクリプト終了時に一時ファイルを
 echo "[info] プロンプトを入力してください。"
 # gedit "$TMP_FILE" &> /dev/null
 # vi "$TMP_FILE"
-vi -c "vsplit $FILE_PATH" "$TMP_FILE"
+vi -c "vsplit $TMP_FILE" "$FILE_PATH"
 
 
 # プロンプトの内容を読み込む
@@ -136,8 +136,8 @@ echo "$CHATGPT_RESPONSE" | jq -r '.choices[0].message.content' > "$SCRIPT_DIR/..
 
 # コードブロックを抽出してcodeに書き込む
 # CODE_BLOCK=$(echo "$CHATGPT_RESPONSE" | jq -r '.choices[0].message.content' | awk '/^```/,/^```$/' | sed '/^```/d')
-CODE_BLOCK=""
 in_code_block=false
+CODE_BLOCK=()
 while IFS= read -r line; do
   if [[ "$line" == '```'* ]]; then
     # コードブロックの開始・終了を切り替える
@@ -149,24 +149,26 @@ while IFS= read -r line; do
   elif $in_code_block; then
     # コードブロック内の行を抽出
     echo "$line"
-    CODE_BLOCK="${CODE_BLOCK}\n${line}"
+    CODE_BLOCK+=("${line}")
   fi
 done < "$SCRIPT_DIR/../backup/result"
 
-
-if [[ -n $CODE_BLOCK ]]; then
-  echo -e "$CODE_BLOCK" > "$SCRIPT_DIR/../backup/code"
+if [[ ${#CODE_BLOCK[@]} -gt 0 ]]; then
+  echo "" > "$SCRIPT_DIR/../backup/code"
+  for statement in "${CODE_BLOCK[@]}"; do
+    echo "$statement" >> "$SCRIPT_DIR/../backup/code"
+  done
 
   # 差分確認して手動でマージ
   echo "diff "$(realpath "$FILE_PATH")" "$(realpath "$SCRIPT_DIR/../backup/code")
   diff-so-fancy $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   # meld $(realpath "$FILE_PATH") $(realpath "$SCRIPT_DIR/../backup/code") 2>/dev/null
   vimdiff -c "windo set nofoldenable" "$FILE_PATH" $(realpath "$SCRIPT_DIR/../backup/code")
-  # echo "$CODE_BLOCK" > "$FILE_PATH"
+  # cat "$SCRIPT_DIR/../backup/code" > "$FILE_PATH"
   # patch "$FILE_PATH" < "$SCRIPT_DIR/../backup/code"
 
   # 上書きしたあとに手動でマージ うまくいかない
-  # echo -e "$CODE_BLOCK" > "$FILE_PATH"
+  # cat "$SCRIPT_DIR/../backup/code" > "$FILE_PATH"
   # git restore -s @ -p "$FILE_PATH"
 
 else
